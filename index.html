@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>測試室預約系統（DEV）</title>
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <path d="M16 2v4M8 2v4M3 10h18"/>
+        <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
+      </svg>
+      測試室預約小工具
+    </div>
+    <nav class="header-nav">
+      <button class="nav-btn active" data-view="week">預約會議</button>
+      <button class="nav-btn" data-view="my">我的預約</button>
+    </nav>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- ── 預約會議 ── -->
+  <section id="view-week" class="view active">
+    <div class="week-toolbar">
+      <div class="week-nav">
+        <button id="w-prev" class="icon-btn">&#8249;</button>
+        <span id="w-label" class="week-label"></span>
+        <button id="w-next" class="icon-btn">&#8250;</button>
+      </div>
+      <button id="w-today" class="btn btn-outline">本週</button>
+    </div>
+    <div class="usage-toggle-bar">
+      <button id="usage-toggle" class="usage-toggle-btn">❓ 操作說明</button>
+    </div>
+    <div id="usage-cards" class="usage-cards hidden">
+      <div class="usage-card">
+        <div class="usage-card-title">📅 預約會議室</div>
+        <ol>
+          <li>點選週曆上的空白時段</li>
+          <li>調整開始與結束時間</li>
+          <li>填入姓名、員編、部門</li>
+          <li>按「送出預約」</li>
+        </ol>
+      </div>
+      <div class="usage-card">
+        <div class="usage-card-title">❌ 取消預約</div>
+        <ol>
+          <li>點上方「我的預約」</li>
+          <li>輸入員編查詢紀錄</li>
+          <li>找到預約後按「取消」</li>
+        </ol>
+      </div>
+      <div class="usage-card">
+        <div class="usage-card-title">✏️ 修改預約</div>
+        <ol>
+          <li>方式一：週曆點擊已預約時段，修改後輸入員編、按「儲存變更」</li>
+          <li>方式二：「我的預約」查詢後按「編輯」，修改後直接按「儲存變更」</li>
+        </ol>
+      </div>
+    </div>
+    <p id="w-deadline-notice" class="deadline-hint"></p>
+    <div class="week-grid-wrapper">
+      <div id="week-grid" class="week-grid-scroll">
+        <div class="loading-box">載入中…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 我的預約 ── -->
+  <section id="view-my" class="view">
+    <div class="page-title">
+      <h1>我的預約</h1>
+      <p>輸入員工編號查詢預約紀錄</p>
+    </div>
+    <div class="query-bar">
+      <input id="query-empid" type="text" placeholder="員工編號" />
+      <button id="query-btn" class="btn btn-primary">查詢</button>
+    </div>
+    <div id="my-list" class="bookings-list"></div>
+  </section>
+
+</main>
+
+<!-- ── 預約 Modal ── -->
+<div id="bm-overlay" class="modal-overlay hidden">
+  <div class="modal bm-modal">
+    <button id="bm-close-x" class="modal-close-x">✕</button>
+    <h2 class="bm-title">預約測試室</h2>
+
+    <div class="bm-date-row" id="bm-date-label"></div>
+
+    <div class="bm-time-row">
+      <div class="bm-time-field">
+        <label class="field-label">開始時間</label>
+        <select id="bm-start-sel" class="time-select"></select>
+      </div>
+      <div class="bm-time-arrow">→</div>
+      <div class="bm-time-field">
+        <label class="field-label">結束時間</label>
+        <select id="bm-end-sel" class="time-select"></select>
+      </div>
+    </div>
+    <p id="dur-warn" class="dur-warn hidden"></p>
+
+    <form id="bm-form" class="bm-form" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label>姓名 <span class="req">*</span></label>
+          <input id="f-name" type="text" placeholder="您的姓名" required />
+        </div>
+        <div class="form-group">
+          <label>員工編號 <span class="req">*</span></label>
+          <input id="f-empid" type="text" placeholder="員工編號" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>部門 <span class="req">*</span></label>
+        <select id="f-dept" required>
+          <option value="">-- 請選擇部門 --</option>
+          <option>用戶開發暨分眾經營部</option>
+          <option>用戶維繫暨加值服務部</option>
+          <option>訓練規劃管理部</option>
+          <option>智慧家庭產品服務部</option>
+          <option>智慧社區產品服務部</option>
+          <option>廣告宣傳部</option>
+          <option>視覺設計部</option>
+          <option>數位平台發展部</option>
+          <option>公開暨顧客洞察部</option>
+          <option>通路分析應用部(測試用)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>備註</label>
+        <textarea id="f-note" rows="2" placeholder="其他需求（選填）"></textarea>
+      </div>
+
+      <div class="bm-actions">
+        <button type="button" id="bm-cancel-btn" class="btn btn-outline">取消</button>
+        <button type="submit" id="bm-submit-btn" class="btn btn-primary">送出預約</button>
+      </div>
+      <p id="bm-msg" class="form-msg"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ── 通用確認 Modal ── -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal">
+    <div id="modal-icon" class="modal-icon"></div>
+    <h2 id="modal-title"></h2>
+    <p id="modal-body"></p>
+    <div class="modal-actions">
+      <button id="modal-cancel" class="btn btn-outline hidden">取消</button>
+      <button id="modal-close" class="btn btn-primary">確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 編輯 Modal ── -->
+<div id="em-overlay" class="modal-overlay hidden">
+  <div class="modal bm-modal">
+    <button id="em-close-x" class="modal-close-x">✕</button>
+    <h2 class="bm-title">編輯預約</h2>
+
+    <div class="bm-date-row">
+      <label class="field-label" style="margin-bottom:6px">預約日期</label>
+      <select id="em-date-sel" class="time-select" style="max-width:220px"></select>
+    </div>
+
+    <div class="bm-time-row" style="margin-top:12px">
+      <div class="bm-time-field">
+        <label class="field-label">開始時間</label>
+        <select id="em-start-sel" class="time-select"></select>
+      </div>
+      <div class="bm-time-arrow">→</div>
+      <div class="bm-time-field">
+        <label class="field-label">結束時間</label>
+        <select id="em-end-sel" class="time-select"></select>
+      </div>
+    </div>
+    <p id="em-dur-warn" class="dur-warn hidden"></p>
+
+    <form id="em-form" class="bm-form" novalidate>
+      <input id="em-empid" type="hidden" />
+      <div class="form-row">
+        <div class="form-group">
+          <label>姓名 <span class="req">*</span></label>
+          <input id="em-name" type="text" required />
+        </div>
+        <div class="form-group">
+          <label>輸入員編儲存編輯 <span class="req">*</span></label>
+          <input id="em-empid-verify" type="text" placeholder="員工編號" autocomplete="off" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>部門 <span class="req">*</span></label>
+        <select id="em-dept" required>
+          <option value="">-- 請選擇部門 --</option>
+          <option>用戶開發暨分眾經營部</option>
+          <option>用戶維繫暨加值服務部</option>
+          <option>訓練規劃管理部</option>
+          <option>智慧家庭產品服務部</option>
+          <option>智慧社區產品服務部</option>
+          <option>廣告宣傳部</option>
+          <option>視覺設計部</option>
+          <option>數位平台發展部</option>
+          <option>公開暨顧客洞察部</option>
+          <option>通路分析應用部(測試用)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>備註</label>
+        <textarea id="em-note" rows="2"></textarea>
+      </div>
+      <div class="bm-actions">
+        <button type="button" id="em-cancel-btn" class="btn btn-outline">取消</button>
+        <button type="submit" class="btn btn-primary">儲存變更</button>
+      </div>
+      <p id="em-msg" class="form-msg"></p>
+    </form>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+</div>
+
+<script src="src/config.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
